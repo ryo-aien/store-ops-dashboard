@@ -1,0 +1,5 @@
+# Claude/Agent related
+.agent/
+.claude/
+guardrails/
+AGENTS.md
