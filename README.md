@@ -4,11 +4,18 @@
 
 ## 機能
 
+### ダッシュボード
 - **地図表示**: 全国の店舗をピン表示し、クリックで店舗詳細を確認
 - **ヒートマップ**: 選択した指標（売上、来客数、インシデント数）に基づき、雨雲レーダー風の色分布で可視化
 - **時間軸スライダー**: 過去から現在までの時系列データを再生・確認
 - **店舗一覧**: 検索・フィルタ機能付きの店舗リスト
 - **KPIカード**: 店舗数、指標の合計・平均などをリアルタイム表示
+
+### KPI分析
+- **会社全体/店舗別分析**: 左サイドバーで分析対象を切り替え
+- **KPI概要**: 売上・客数・インシデントのカード表示（前年比、目標達成率）
+- **期間比較**: 任意の2期間を比較（前年比/前月比/カスタム）
+- **要因分解**: 売上変動を客数・単価などの要因に分解
 
 ## 技術スタック
 
@@ -45,7 +52,6 @@
 │   │       └── 001_initial.py
 │   └── app/
 │       ├── main.py
-│       ├── seed.py
 │       ├── api/
 │       │   ├── stores.py
 │       │   └── metrics.py
@@ -55,20 +61,26 @@
 │       │   └── security.py
 │       ├── models/
 │       │   ├── store.py
+│       │   ├── metric.py
+│       │   └── target.py
+│       ├── schemas/
+│       │   ├── store.py
 │       │   └── metric.py
-│       └── schemas/
-│           ├── store.py
-│           └── metric.py
+│       └── services/
 ├── frontend/
 │   ├── Dockerfile
 │   ├── package.json
+│   ├── next.config.js
+│   ├── tailwind.config.ts
 │   └── src/
 │       ├── app/
 │       │   ├── layout.tsx
 │       │   ├── page.tsx
 │       │   ├── globals.css
 │       │   ├── providers.tsx
-│       │   └── dashboard/
+│       │   ├── dashboard/
+│       │   │   └── page.tsx
+│       │   └── analysis/
 │       │       └── page.tsx
 │       ├── components/
 │       │   ├── Map.tsx
@@ -76,17 +88,27 @@
 │       │   ├── TimeSlider.tsx
 │       │   ├── MetricSelector.tsx
 │       │   ├── KPICards.tsx
+│       │   ├── EnhancedKpiCard.tsx
 │       │   ├── StoreList.tsx
-│       │   └── StoreDetail.tsx
+│       │   ├── StoreDetail.tsx
+│       │   ├── StoreKpiDetail.tsx
+│       │   ├── SearchFilter.tsx
+│       │   ├── PeriodPicker.tsx
+│       │   ├── KpiComparison.tsx
+│       │   ├── KpiDecomposition.tsx
+│       │   └── admin/
+│       │       ├── AdminLayout.tsx
+│       │       ├── DashboardView.tsx
+│       │       └── KpiAnalysisView.tsx
 │       ├── lib/
 │       │   ├── api.ts
 │       │   ├── store.ts
 │       │   └── colors.ts
 │       └── types/
-│           └── index.ts
-├── data/
-│   ├── stores.csv
-│   └── metrics.csv
+│           ├── index.ts
+│           └── leaflet-heat.d.ts
+├── db/
+│   └── init/                 # DB初期化スクリプト
 └── scripts/
     └── init-db.sh
 ```
@@ -124,7 +146,7 @@ exit
 
 ### 4. アクセス
 
-- フロントエンド: http://localhost:3000
+- フロントエンド: http://localhost:3001
 - バックエンドAPI: http://localhost:8001
 - APIドキュメント: http://localhost:8001/docs
 
@@ -157,10 +179,6 @@ exit
 - **速度ボタン（x1/x2/x4）**: 再生速度を変更
 - **最新ボタン**: 最新時刻にジャンプ
 
-### 凡例
-
-画面左下に表示される凡例で、色と値の対応を確認できます。雨雲レーダー風の連続グラデーションで表示されます。
-
 ## API仕様
 
 ### 店舗API
@@ -182,6 +200,9 @@ exit
 | GET | /api/metrics/summary | 指定時刻の集計データ取得 |
 | GET | /api/metrics/time-range | データ存在期間取得 |
 | GET | /api/metrics/stores/{id} | 店舗別時系列データ取得 |
+| GET | /api/metrics/kpi/summary | KPIサマリー（前年比・目標達成率）取得 |
+| GET | /api/metrics/kpi/comparison | 期間比較データ取得 |
+| GET | /api/metrics/kpi/decomposition | 要因分解データ取得 |
 | POST | /api/metrics/import | 指標CSVインポート（要認証） |
 
 ### 時刻補間の仕様
@@ -239,6 +260,7 @@ curl -X POST http://localhost:8001/api/stores \
 | 変数名 | デフォルト値 | 説明 |
 |--------|-------------|------|
 | NEXT_PUBLIC_API_URL | http://localhost:8001 | APIベースURL |
+
 
 ## パフォーマンスについて
 
